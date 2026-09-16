@@ -162,4 +162,19 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   .chat-input-row input{padding:7px 10px;font-size:11px}
   .chat-input-row button{padding:7px 11px;font-size:10px}
   .chat-toggle{width:44px;height:44px;bottom:16px;left:14px;font-size:18px}
+  /* Gear mode button */
+#gearModeBtn{font-size:11px;font-weight:900;letter-spacing:.04em;color:#ffd400;font-family:monospace}
+#gearModeBtn.off{color:#8a8a99;opacity:.6}
+
+/* Shift controls — only visible in manual gear mode */
+.shift-controls{position:absolute;z-index:13;display:none;flex-direction:column;gap:6px;pointer-events:auto}
+.shift-controls.show{display:flex}
+.shift-controls button{width:52px;height:52px;border-radius:50%;background:#16161ce8;border:1.5px solid #ffd40055;color:#ffd400;font-size:20px;font-weight:900;backdrop-filter:blur(10px);touch-action:none}
+.shift-controls button:active{background:#ffd400;color:#0a0a0e}
+
+@media (width<=760px),(pointer:coarse){
+  #gearModeBtn{font-size:9px}
+  .shift-controls{right:180px;bottom:170px;gap:5px}
+  .shift-controls button{width:44px;height:44px;font-size:17px;border-radius:50%}
+}
 }
