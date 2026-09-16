@@ -1,0 +1,165 @@
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#0a0a0e;color:#fff;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;overflow:hidden;height:100%}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+
+.game-shell{width:100vw;height:100dvh;position:relative;overflow:hidden;user-select:none;touch-action:none;background:#0a0a0e}
+.game-canvas,.game-canvas canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+/* ===== TOP BAR ===== */
+.topbar{position:absolute;top:0;left:0;right:0;height:56px;padding:0 18px;display:flex;justify-content:space-between;align-items:center;z-index:10;background:linear-gradient(#0a0a0ecc,#0a0a0e00);pointer-events:none}
+.topbar *{pointer-events:auto}
+.brand{font-size:18px;font-weight:900;letter-spacing:-.02em;font-style:italic}
+.brand span{color:#ffd400}
+.brand b{background:#ffd400;color:#0a0a0e;font-size:9px;padding:3px 6px;border-radius:4px;margin-left:6px;letter-spacing:.1em;font-style:normal;font-weight:900}
+.top-actions{display:flex;gap:8px;align-items:center}
+
+.user-pill{display:flex;align-items:center;gap:8px;background:#16161ccc;border:1px solid #ffffff14;border-radius:20px;padding:5px 14px 5px 5px;font-size:12px;font-weight:800;backdrop-filter:blur(10px)}
+.user-pill .avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#ffd400,#ff8c00);color:#0a0a0e;display:grid;place-items:center;font-size:12px;font-weight:900;text-transform:uppercase}
+
+.coin-pill{display:flex;align-items:center;gap:7px;background:#16161ccc;border:1px solid #ffffff14;border-radius:20px;padding:6px 13px;font-size:12px;font-weight:800;color:#ffd400;backdrop-filter:blur(10px)}
+.coin-pill i{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff2a8,#e8a018 60%,#8a5a00)}
+.icon-button{width:38px;height:38px;border-radius:50%;background:#16161ccc;border:1px solid #ffffff14;font-size:15px;display:grid;place-items:center;backdrop-filter:blur(10px);transition:background .15s,transform .1s}
+.icon-button:active{transform:scale(.92);background:#22222c}
+.icon-button.off{opacity:.4}
+
+/* ===== MENU ===== */
+.menu-card{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 32px);overflow-y:auto;background:#16161c;border-radius:20px;padding:26px;box-shadow:0 30px 100px #000000dd;z-index:8;border:1px solid #ffffff14}
+.eyebrow{font-size:10px;letter-spacing:.18em;color:#ffd400;font-weight:900;margin-bottom:10px}
+.menu-card h1{font-size:34px;font-weight:900;line-height:.95;letter-spacing:-.03em;font-style:italic;margin-bottom:14px}
+.menu-card h1 em{color:#ffd400;font-style:italic;display:block}
+.intro{font-size:13px;line-height:1.5;color:#8a8a99;margin-bottom:22px}
+.setting{margin-bottom:20px}
+.setting label{display:block;font-size:10px;font-weight:900;letter-spacing:.14em;color:#8a8a99;margin-bottom:10px}
+
+.car-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.car-tile{position:relative;text-align:left;background:#0a0a0e;border:1.5px solid #ffffff14;border-radius:12px;padding:12px;transition:border-color .15s,background .15s,transform .1s}
+.car-tile:active{transform:scale(.98)}
+.car-tile.active{border-color:#ffd400;background:#ffd40010}
+.car-tile.locked{opacity:.4}
+.car-tile .car-name{display:block;font-size:13px;font-weight:900;letter-spacing:-.01em;margin-bottom:9px}
+.car-tile .bars{display:grid;grid-template-columns:26px 1fr;gap:5px 8px;align-items:center;font-size:9px;color:#8a8a99;font-weight:800;letter-spacing:.05em}
+.car-tile .bar{height:5px;background:#ffffff14;border-radius:3px;overflow:hidden}
+.car-tile .bar i{display:block;height:100%;background:#ffd400;border-radius:3px}
+.car-tile .cost{display:block;margin-top:11px;font-size:11px;font-weight:900;color:#ffd400;letter-spacing:.06em}
+.car-tile .cost.free{color:#38f7c0}
+.car-tile .ability-tag{position:absolute;top:10px;right:10px;font-size:8px;font-weight:900;padding:3px 6px;border-radius:6px;background:#ffd40022;color:#ffd400;letter-spacing:.06em}
+
+.paint-row{display:flex;gap:10px;flex-wrap:wrap}
+.paint-row button{width:34px;height:34px;border-radius:50%;border:3px solid #0a0a0e;box-shadow:0 0 0 1.5px #ffffff1a;transition:transform .12s}
+.paint-row button.selected{transform:scale(1.15);box-shadow:0 0 0 2.5px #fff}
+
+.start-button{width:100%;padding:17px 22px;background:linear-gradient(135deg,#ffd400,#ff8c00);color:#0a0a0e;font-size:15px;font-weight:900;letter-spacing:.1em;border-radius:14px;display:flex;justify-content:space-between;align-items:center;margin-top:4px;transition:filter .15s,transform .1s}
+.start-button:active{filter:brightness(.92);transform:scale(.99)}
+.start-button:disabled{opacity:.55}
+.start-button span{font-size:22px;line-height:0}
+
+.controls-help{margin-top:18px;font-size:11px;line-height:1.6;color:#8a8a99;font-weight:600}
+.controls-help b{color:#ffd400;font-weight:900}
+
+/* ===== HUD ===== */
+.race-hud{position:absolute;bottom:22px;left:22px;z-index:6;display:flex;align-items:flex-end;gap:14px;pointer-events:none}
+.speed-block strong{display:block;font-size:74px;font-weight:900;line-height:.8;letter-spacing:-.06em;color:#fff;text-shadow:0 6px 30px #000}
+.speed-block span{display:block;font-size:11px;font-weight:900;letter-spacing:.28em;color:#ffd400;margin-top:8px}
+.gear-block{background:#16161cd9;border:1px solid #ffffff1a;border-radius:12px;padding:10px 16px;text-align:center;backdrop-filter:blur(10px);min-width:56px}
+.gear-block small{display:block;font-size:9px;letter-spacing:.16em;color:#8a8a99;font-weight:800;margin-bottom:5px}
+.gear-block b{font-size:26px;font-weight:900;line-height:1;color:#fff}
+.nitro-block{position:absolute;bottom:calc(100% + 14px);left:0;width:180px}
+.nitro-block span{display:block;font-size:9px;letter-spacing:.18em;color:#8a8a99;font-weight:800;margin-bottom:6px}
+.nitro-block div{height:5px;background:#ffffff14;border-radius:3px;overflow:hidden}
+.nitro-block i{display:block;height:100%;background:linear-gradient(90deg,#2c7cff,#38f7c0);border-radius:3px;transition:width .12s linear}
+
+.race-info{position:absolute;top:68px;left:18px;display:flex;flex-wrap:wrap;gap:6px;z-index:6;pointer-events:none;max-width:70vw}
+.race-info span{background:#16161cd9;border:1px solid #ffffff1a;border-radius:9px;padding:6px 11px;font-size:10px;font-weight:800;letter-spacing:.05em;color:#8a8a99;backdrop-filter:blur(10px)}
+.race-info b{color:#fff;margin-left:5px}
+
+.drift-info{position:absolute;top:118px;left:18px;background:#ffd400;color:#0a0a0e;padding:9px 15px;border-radius:11px;font-size:13px;font-weight:900;letter-spacing:.04em;display:none;z-index:7;pointer-events:none;box-shadow:0 6px 24px #ffd40033}
+.drift-info.show{display:block}
+.drift-info b{color:#0a0a0e}
+
+.ability-info{position:absolute;top:162px;left:18px;background:#ff3b30;color:#fff;padding:9px 15px;border-radius:11px;font-size:12px;font-weight:900;letter-spacing:.08em;display:none;z-index:7;pointer-events:none;box-shadow:0 6px 24px #ff3b3033}
+.ability-info.show{display:block}
+.ability-info b{color:#fff}
+
+.clock{position:absolute;top:68px;right:18px;background:#16161cd9;border:1px solid #ffffff1a;border-radius:11px;padding:9px 13px;text-align:right;backdrop-filter:blur(10px);z-index:6}
+.clock small{display:block;font-size:9px;letter-spacing:.16em;color:#8a8a99;font-weight:800;margin-bottom:4px}
+.clock span{font-size:14px;font-weight:900;letter-spacing:.05em;color:#fff}
+
+.airpop{position:absolute;top:22%;left:50%;transform:translateX(-50%) scale(.8);font-size:52px;font-weight:900;color:#ffd400;text-shadow:0 6px 40px #000,0 0 30px #ffd40088;opacity:0;transition:opacity .15s,transform .15s;pointer-events:none;text-align:center;z-index:8;letter-spacing:-.02em;font-style:italic}
+.airpop.on{opacity:1;transform:translateX(-50%) scale(1)}
+
+.swap-hint{position:absolute;bottom:130px;left:50%;transform:translateX(-50%);background:#16161cf5;border:1.5px solid #38f7c0;border-radius:12px;padding:12px 20px;font-size:13px;font-weight:900;letter-spacing:.06em;color:#38f7c0;display:none;z-index:7;pointer-events:none;white-space:nowrap;backdrop-filter:blur(10px);box-shadow:0 10px 40px #00000099}
+.swap-hint.show{display:block}
+.swap-hint.bad{border-color:#ff3b30;color:#ff3b30}
+
+.loading{position:absolute;inset:0;background:#0a0a0e;z-index:100;display:grid;place-items:center;color:#ffd400;font-size:13px;font-weight:900;letter-spacing:.35em;text-align:center;padding:20px}
+.loading.hide{display:none}
+.scanlines{display:none}
+
+/* ===== TOUCH CONTROLS ===== */
+.touch-controls{display:none;position:absolute;z-index:12;gap:10px}
+.touch-controls button{background:#16161cd9;border:1.5px solid #ffffff1a;color:#fff;backdrop-filter:blur(10px);font-weight:900;touch-action:none;letter-spacing:.04em}
+.p1-controls{left:18px;bottom:22px;align-items:flex-end;display:flex}
+.p1-controls button{width:68px;height:68px;border-radius:50%;font-size:24px}
+.pedals{right:18px;bottom:22px;display:flex;flex-wrap:wrap;max-width:150px;justify-content:flex-end;align-items:flex-end}
+.pedals button{border-radius:22px;width:64px;height:72px;font-size:10px}
+.pedals .gas-button{background:#38f7c0;color:#0a0a0e;border-color:#38f7c0;height:96px}
+.pedals .brake-button{background:#ff3b3022;border-color:#ff3b3088;color:#ff3b30}
+.pedals .nitro-button{background:#ffd400;color:#0a0a0e;border-color:#ffd400;width:54px;height:54px;border-radius:27px;font-size:10px}
+.pedals .drift-button{background:#ff8c1a;color:#0a0a0e;border-color:#ff8c1a;width:54px;height:54px;border-radius:27px;font-size:10px}
+.pedals .ability-button{background:#16161cd9;border-color:#ff3b30;color:#ff3b30;width:64px;height:54px;border-radius:14px;font-size:9px;letter-spacing:.02em}
+
+/* ===== CHAT ===== */
+.chat-box{position:absolute;bottom:20px;left:18px;width:280px;max-width:calc(100vw - 200px);z-index:15;display:none;flex-direction:column;gap:6px;pointer-events:auto}
+.chat-box.open{display:flex}
+.chat-messages{background:#16161ce8;border:1px solid #ffffff1a;border-radius:12px;padding:10px;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;backdrop-filter:blur(10px);box-shadow:0 10px 30px #00000088}
+.chat-messages::-webkit-scrollbar{width:4px}
+.chat-messages::-webkit-scrollbar-thumb{background:#ffffff22;border-radius:2px}
+.chat-msg{font-size:12px;line-height:1.4;font-weight:600;color:#e8e8ee;word-wrap:break-word;animation:chatIn .2s ease-out}
+.chat-msg .who{color:#ffd400;font-weight:900;margin-right:6px}
+.chat-msg.mine .who{color:#38f7c0}
+@keyframes chatIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.chat-input-row{display:flex;gap:6px}
+.chat-input-row input{flex:1;background:#16161ce8;border:1px solid #ffffff1a;border-radius:10px;color:#fff;padding:9px 12px;font-size:12px;font-weight:600;font-family:inherit;outline:none;backdrop-filter:blur(10px)}
+.chat-input-row input:focus{border-color:#ffd400}
+.chat-input-row button{background:#ffd400;color:#0a0a0e;border-radius:10px;padding:9px 14px;font-size:11px;font-weight:900;letter-spacing:.08em}
+
+.chat-toggle{position:absolute;bottom:20px;left:18px;width:48px;height:48px;border-radius:50%;background:#16161ce8;border:1.5px solid #ffffff1a;font-size:20px;color:#fff;z-index:14;backdrop-filter:blur(10px);display:none}
+
+/* ===== MOBILE ===== */
+@media (width<=760px),(pointer:coarse){
+  .topbar{height:50px;padding:0 12px}
+  .brand{font-size:15px}
+  .brand b{display:none}
+  .user-pill{padding:4px 10px 4px 4px;font-size:11px}
+  .user-pill .avatar{width:22px;height:22px;font-size:10px}
+  .coin-pill{padding:5px 10px;font-size:11px}
+  .icon-button{width:34px;height:34px;font-size:13px}
+  .menu-card{padding:20px 18px;border-radius:16px}
+  .menu-card h1{font-size:26px}
+  .intro{font-size:11px;margin-bottom:16px}
+  .car-grid{grid-template-columns:1fr 1fr;gap:7px}
+  .car-tile{padding:10px}
+  .start-button{padding:14px 18px;font-size:13px}
+  .race-hud{bottom:118px;left:14px;transform:scale(.72);transform-origin:0 100%}
+  .race-info{top:58px;left:12px;right:12px;max-width:calc(100vw - 24px)}
+  .race-info span{padding:5px 8px;font-size:9px}
+  .drift-info{top:100px;left:12px;padding:7px 12px;font-size:11px}
+  .ability-info{top:138px;left:12px;padding:7px 12px;font-size:11px}
+  .clock{top:58px;right:12px;padding:7px 10px}
+  .clock span{font-size:12px}
+  .swap-hint{bottom:190px;font-size:11px;padding:10px 16px}
+  .airpop{font-size:40px}
+  .p1-controls{left:14px;bottom:16px}
+  .p1-controls button{width:58px;height:58px;font-size:20px}
+  .pedals{right:14px;bottom:16px;max-width:132px}
+  .pedals button{width:54px;height:62px;font-size:9px}
+  .pedals .gas-button{height:82px}
+  .pedals .nitro-button,.pedals .drift-button{width:46px;height:46px;border-radius:23px}
+  .pedals .ability-button{width:54px;height:46px;font-size:8px}
+  .chat-box{width:230px;bottom:16px;left:14px;max-width:calc(100vw - 160px)}
+  .chat-messages{max-height:110px;padding:8px}
+  .chat-msg{font-size:11px}
+  .chat-input-row input{padding:7px 10px;font-size:11px}
+  .chat-input-row button{padding:7px 11px;font-size:10px}
+  .chat-toggle{width:44px;height:44px;bottom:16px;left:14px;font-size:18px}
+}

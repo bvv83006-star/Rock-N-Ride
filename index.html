@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<title>Rock'n Ride Cars</title>
+<link rel="stylesheet" href="/style.css" />
+<style>
+@media (orientation: portrait) and (max-width: 900px){
+  body::before{
+    content:"↻ TURN YOUR PHONE SIDEWAYS";
+    position:fixed;inset:0;background:#0a0a0e;color:#ffd400;
+    display:grid;place-items:center;z-index:9999;
+    font:900 18px/1.4 -apple-system,sans-serif;letter-spacing:.15em;
+    text-align:center;padding:40px;
+  }
+}
+</style>
+</head>
+<body>
+<main class="game-shell">
+<div class="game-canvas" id="canvas"></div>
+<header class="topbar">
+<div class="brand"><span>ROCK'N</span> RIDE <b>CARS</b></div>
+<div class="top-actions">
+<div class="user-pill" id="userPill"><span class="avatar" id="userAvatar">P</span><span id="userName">Player</span></div>
+<div class="coin-pill"><i></i><span id="coinCount">0</span></div>
+<button class="icon-button" id="musicBtn" title="Music">🎵</button>
+<button class="icon-button" id="fsBtn">⛶</button>
+<button class="icon-button" id="pauseBtn">Ⅱ</button>
+</div>
+</header>
+<section class="race-hud" id="hud" style="display:none">
+<div class="speed-block"><strong id="speedEl">0</strong><span>KM/H</span></div>
+<div class="gear-block"><small>GEAR</small><b id="gearEl">N</b></div>
+<div class="nitro-block"><span>NITRO</span><div><i id="nitroEl" style="width:100%"></i></div></div>
+</section>
+<section class="race-info" id="info" style="display:none">
+<span>SCORE <b id="scoreEl">0</b></span>
+<span>STUNT <b id="cpEl">0/16</b></span>
+<span>AIRBORNE <b id="airEl">0.0s</b></span>
+<span>BEST AIR <b id="bestAirEl">0.0s</b></span>
+<span>CAR <b id="carClassEl">SEDAN</b></span>
+</section>
+<div class="drift-info" id="driftInfo">DRIFT <b id="driftScore">0</b> ×<b id="driftMult">1.0</b></div>
+<div class="ability-info" id="abilityInfo">POWER <b id="abilityName">—</b> <b id="abilityTimer">0.0</b></div>
+<div class="clock" id="clock" style="display:none"><small>TIME</small><span id="clockEl">12:00</span></div>
+<div class="airpop" id="airPop">+ AIR</div>
+<div class="swap-hint" id="swapHint"></div>
+<div class="touch-controls p1-controls" id="p1Ctl" style="display:none">
+<button data-key="a">◀</button><button data-key="d">▶</button>
+</div>
+<div class="touch-controls pedals" id="pedalCtl" style="display:none">
+<button id="abilityBtn" class="ability-button">—</button>
+<button data-key=" " class="drift-button">DRIFT</button>
+<button data-key="shift" class="nitro-button">N₂O</button>
+<button data-key="s" class="brake-button">BRAKE</button>
+<button data-key="w" class="gas-button">ACC</button>
+</div>
+<section class="menu-card" id="menu">
+<p class="eyebrow">ROCK'N RIDE CARS • 10 CARS • 10 POWERS</p>
+<h1>ROCK'N RIDE <em>CARS</em></h1>
+<p class="intro">10 cars. Every car has a unique power. Press E or tap ABILITY. Tilt your phone to steer. Find the glowing bowl to unlock the hidden 700 glitch.</p>
+<div class="setup-grid">
+<div class="setting"><label>STARTING CAR — EACH HAS A POWER</label><div class="car-grid" id="carGrid"></div></div>
+<div class="setting"><label>PAINT</label><div class="paint-row" id="paintRow">
+<button data-color="#ff3b30" class="selected" style="background:#ff3b30"></button>
+<button data-color="#ff8c00" style="background:#ff8c00"></button>
+<button data-color="#ffd400" style="background:#ffd400"></button>
+<button data-color="#38f7c0" style="background:#38f7c0"></button>
+<button data-color="#00d9ff" style="background:#00d9ff"></button>
+<button data-color="#2c7cff" style="background:#2c7cff"></button>
+<button data-color="#8833cc" style="background:#8833cc"></button>
+<button data-color="#ff1493" style="background:#ff1493"></button>
+<button data-color="#f7f7fb" style="background:#f7f7fb"></button>
+<button data-color="#8a8a99" style="background:#8a8a99"></button>
+<button data-color="#222222" style="background:#222222"></button>
+<button data-color="#39ff14" style="background:#39ff14"></button>
+</div></div>
+</div>
+<button class="start-button" id="startBtn">START ENGINE <span>›</span></button>
+<div class="controls-help">
+<p><b>KEYS</b> W throttle • S brake • A/D steer • Space drift • Shift nitro • E ability</p>
+<p><b>TILT</b> Rotate phone to steer • <b>GLITCH</b> Find the glowing bowl</p>
+</div>
+</section>
+<div class="scanlines"></div>
+<div class="loading hide" id="loading">LOADING…</div>
+<div class="chat-box" id="chatBox">
+<div class="chat-messages" id="chatMessages"></div>
+<div class="chat-input-row">
+<input type="text" id="chatInput" maxlength="100" placeholder="Type message…" autocomplete="off" />
+<button id="chatSend">SEND</button>
+</div>
+</div>
+<button class="chat-toggle" id="chatToggle">💬</button>
+</main>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.185.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.185.0/examples/jsm/"
+  }
+}
+</script>
+<script src="/socket.io/socket.io.js"></script>
+<script type="module" src="/src/game.js"></script>
+</body>
+</html>
