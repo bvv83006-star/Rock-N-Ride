@@ -5,17 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
 <title>Rock'n Ride Cars</title>
 <link rel="stylesheet" href="/style.css" />
-<style>
-@media (orientation: portrait) and (max-width: 900px){
-  body::before{
-    content:"↻ TURN YOUR PHONE SIDEWAYS";
-    position:fixed;inset:0;background:#0a0a0e;color:#ffd400;
-    display:grid;place-items:center;z-index:9999;
-    font:900 18px/1.4 -apple-system,sans-serif;letter-spacing:.15em;
-    text-align:center;padding:40px;
-  }
-}
-</style>
 </head>
 <body>
 <main class="game-shell">
@@ -25,6 +14,8 @@
 <div class="top-actions">
 <div class="user-pill" id="userPill"><span class="avatar" id="userAvatar">P</span><span id="userName">Player</span></div>
 <div class="coin-pill"><i></i><span id="coinCount">0</span></div>
+  <button class="icon-button" id="gearModeBtn" title="Gear Mode">⚙ A</button>
+</button>
 <button class="icon-button" id="musicBtn" title="Music">🎵</button>
 <button class="icon-button" id="fsBtn">⛶</button>
 <button class="icon-button" id="pauseBtn">Ⅱ</button>
