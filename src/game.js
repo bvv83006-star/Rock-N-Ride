@@ -276,3 +276,692 @@ function spawnCoins(){
     coinPickups.push({ mesh:m, x, z, spin:Math.random()*Math.PI*2, taken:false, respawnAt:0 });
   }
 }
+let selectedCarClass = 'sedan';
+
+function renderCarTiles(){
+  if(!carGrid) return;
+  carGrid.innerHTML = '';
+  for(const c of CAR_CLASSES){
+    const can = save.coins >= c.cost;
+    const d = document.createElement('button');
+    d.className = 'car-tile' + (c.id === selectedCarClass ? ' active' : '') + (can ? '' : ' locked');
+    d.innerHTML = `${c.ability !== 'none' ? `<span class="ability-tag">${c.abilityName}</span>` : ''}<span class="car-name">${c.name}</span><div class="bars"><span>SPD</span><span class="bar"><i style="width:${Math.min(100, c.speed/1.4)}%"></i></span><span>ACC</span><span class="bar"><i style="width:${Math.min(100, c.accel*1.4)}%"></i></span></div><span class="cost ${c.cost === 0 ? 'free' : ''}">${c.cost === 0 ? 'FREE' : c.cost + '¢'}</span>`;
+    d.addEventListener('click', () => { if(!can) return; selectedCarClass = c.id; renderCarTiles(); updateStartButton(); });
+    carGrid.appendChild(d);
+  }
+}
+function updateStartButton(){
+  if(!startBtn) return;
+  const total = getCarClass(selectedCarClass).cost;
+  startBtn.innerHTML = total === 0 ? `START ENGINE <span>›</span>` : `START ENGINE — ${total}¢ <span>›</span>`;
+}
+renderCarTiles();
+updateStartButton();
+
+if(paintRow){
+  paintRow.querySelectorAll('button').forEach(b => b.classList.toggle('selected', b.dataset.color === savedColor));
+  paintRow.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-color]');
+    if(!btn) return;
+    paintRow.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    playerColor = parseInt(btn.dataset.color.slice(1), 16);
+    localStorage.setItem('playerColor', btn.dataset.color);
+    if(player.userData.bodyMaterial) player.userData.bodyMaterial.color.setHex(playerColor);
+    if(socket) socket.emit('setInfo', { name: playerName, color: playerColor });
+  });
+}
+
+const keys = {};
+const blockKeys = ['w','a','s','d',' ','arrowup','arrowdown','arrowleft','arrowright','shift','e','q','z'];
+let started = false, paused = false, camMode = 0;
+let musicOn = true;
+
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if(chatInputEl && document.activeElement === chatInputEl){ if(k === 'escape') chatInputEl.blur(); return; }
+  keys[k] = true;
+  if(blockKeys.includes(k)) e.preventDefault();
+  if(k === 'c') camMode = (camMode + 1) % 3;
+  if(k === 'escape' && started) setPaused(!paused);
+  if(k === 'e') triggerAbility();
+  if(k === 'q') shiftDown();
+  if(k === 'z') shiftUp();
+});
+window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+function bindTouch(el, key){
+  const on = e => { e.preventDefault(); keys[key] = true; };
+  const off = e => { e.preventDefault(); keys[key] = false; };
+  el.addEventListener('pointerdown', on);
+  el.addEventListener('pointerup', off);
+  el.addEventListener('pointercancel', off);
+  el.addEventListener('pointerleave', off);
+}
+document.querySelectorAll('[data-key]').forEach(el => bindTouch(el, el.dataset.key));
+document.getElementById('abilityBtn')?.addEventListener('pointerdown', e => { e.preventDefault(); triggerAbility(); });
+
+if(gearModeBtn){
+  gearModeBtn.addEventListener('click', () => {
+    gearMode = gearMode === 'auto' ? 'manual' : (gearMode === 'manual' ? 'off' : 'auto');
+    localStorage.setItem('gearMode', gearMode);
+    updateGearModeButton();
+    showShiftControls();
+  });
+}
+
+let shiftUpEl = null, shiftDownEl = null;
+function ensureShiftControls(){
+  if(shiftUpEl) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'shift-controls';
+  wrap.id = 'shiftControls';
+  const up = document.createElement('button'); up.textContent = '▲';
+  const down = document.createElement('button'); down.textContent = '▼';
+  wrap.appendChild(up); wrap.appendChild(down);
+  document.querySelector('.game-shell')?.appendChild(wrap);
+  shiftUpEl = up; shiftDownEl = down;
+  up.addEventListener('pointerdown', e => { e.preventDefault(); shiftUp(); });
+  down.addEventListener('pointerdown', e => { e.preventDefault(); shiftDown(); });
+}
+ensureShiftControls();
+function showShiftControls(){
+  const el = document.getElementById('shiftControls');
+  if(!el) return;
+  if(gearMode === 'manual' && started && isMobile) el.classList.add('show');
+  else el.classList.remove('show');
+}
+function shiftUp(){ if(gearMode !== 'manual') return; P.gear = Math.min(6, P.gear + 1); }
+function shiftDown(){ if(gearMode !== 'manual') return; P.gear = Math.max(1, P.gear - 1); }
+
+function setPaused(v){ paused = v; if(pauseBtn) pauseBtn.textContent = v ? '▶' : 'Ⅱ'; }
+
+if(chatToggleEl) chatToggleEl.addEventListener('click', () => {
+  chatBoxEl.classList.toggle('open');
+  if(chatBoxEl.classList.contains('open')) chatInputEl.focus();
+});
+function sendChat(){
+  const text = chatInputEl.value.trim().slice(0, 100);
+  if(!text || !socket) return;
+  socket.emit('chatMessage', text);
+  chatInputEl.value = '';
+}
+if(chatSendEl) chatSendEl.addEventListener('click', sendChat);
+if(chatInputEl) chatInputEl.addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); sendChat(); }
+  if(e.key === 'Escape'){ chatBoxEl.classList.remove('open'); chatInputEl.blur(); }
+});
+function addChatMessage(name, text, mine){
+  const d = document.createElement('div');
+  d.className = 'chat-msg' + (mine ? ' mine' : '');
+  d.innerHTML = `<span class="who">${name.replace(/</g,'&lt;')}:</span>${text.replace(/</g,'&lt;')}`;
+  chatMessagesEl.appendChild(d);
+  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+  while(chatMessagesEl.children.length > 20) chatMessagesEl.removeChild(chatMessagesEl.firstChild);
+  if(!chatBoxEl.classList.contains('open')){
+    chatBoxEl.classList.add('open');
+    clearTimeout(chatBoxEl._autoClose);
+    chatBoxEl._autoClose = setTimeout(() => { if(document.activeElement !== chatInputEl) chatBoxEl.classList.remove('open'); }, 5000);
+  }
+}
+const chatBubbles = {};
+function showBubble(playerId, text){
+  const o = otherPlayers[playerId];
+  if(!o) return;
+  if(chatBubbles[playerId]){ scene.remove(chatBubbles[playerId].sprite); clearTimeout(chatBubbles[playerId].timeout); }
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgba(22,22,28,0.95)';
+  ctx.beginPath(); ctx.roundRect(4, 4, 248, 56, 14); ctx.fill();
+  ctx.strokeStyle = '#ffd400'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 22px -apple-system,sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const short = text.length > 22 ? text.slice(0, 20) + '…' : text;
+  ctx.fillText(short, 128, 34);
+  const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+  sprite.scale.set(6, 1.5, 1);
+  scene.add(sprite);
+  chatBubbles[playerId] = { sprite, timeout: setTimeout(() => { scene.remove(sprite); delete chatBubbles[playerId]; }, 4000) };
+}
+
+let audioCtx = null, engineOsc = null, engineGain = null, engineFilter = null;
+function initAudio(){
+  if(audioCtx) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    engineOsc = audioCtx.createOscillator();
+    engineOsc.type = 'sawtooth';
+    engineFilter = audioCtx.createBiquadFilter();
+    engineFilter.type = 'lowpass';
+    engineFilter.frequency.value = 400;
+    engineGain = audioCtx.createGain();
+    engineGain.gain.value = 0;
+    engineOsc.connect(engineFilter); engineFilter.connect(engineGain); engineGain.connect(audioCtx.destination);
+    engineOsc.start();
+  } catch(e){}
+}
+function updateEngineSound(speed){
+  if(!audioCtx) return;
+  const s = Math.abs(speed);
+  engineOsc.frequency.setTargetAtTime(50 + s*6, audioCtx.currentTime, 0.1);
+  engineFilter.frequency.setTargetAtTime(300 + s*15, audioCtx.currentTime, 0.1);
+  engineGain.gain.setTargetAtTime(s > 1 ? 0.04 + s*0.002 : 0.015, audioCtx.currentTime, 0.1);
+}
+function playCoinSound(){
+  if(!audioCtx) return;
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1);
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+}
+function playGlitchSound(){
+  if(!audioCtx) return;
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(1600, audioCtx.currentTime + 0.25);
+  gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+}
+
+const skidGeo = new THREE.PlaneGeometry(0.5, 1.3);
+const skidBaseMat = new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:0.4, depthWrite:false });
+const skidMarks = [];
+let skidIdx = 0;
+const MAX_SKID = 200;
+for(let i = 0; i < MAX_SKID; i++){
+  const m = new THREE.Mesh(skidGeo, skidBaseMat.clone());
+  m.rotation.x = -Math.PI/2; m.visible = false;
+  scene.add(m); skidMarks.push({ mesh:m, life:0 });
+}
+function addSkidMark(x, z, rotY){
+  const s = skidMarks[skidIdx];
+  s.mesh.position.set(x, 0.05, z); s.mesh.rotation.z = rotY;
+  s.mesh.visible = true; s.mesh.material.opacity = 0.6; s.life = 4.5;
+  skidIdx = (skidIdx + 1) % MAX_SKID;
+}
+const smokeGeo = new THREE.SphereGeometry(0.5, 6, 6);
+const smokeMat = new THREE.MeshBasicMaterial({ color:0xe8e8e8, transparent:true, opacity:0.7, depthWrite:false });
+const smokeParts = [];
+let smokeIdx = 0;
+const MAX_SMOKE = 200;
+for(let i = 0; i < MAX_SMOKE; i++){
+  const m = new THREE.Mesh(smokeGeo, smokeMat.clone());
+  m.visible = false;
+  scene.add(m); smokeParts.push({ mesh:m, life:0, vx:0, vy:0, vz:0 });
+}
+function spawnSmoke(x, y, z){
+  const p = smokeParts[smokeIdx];
+  p.mesh.position.set(x, y, z);
+  p.mesh.scale.setScalar(1.0 + Math.random()*0.9);
+  p.mesh.visible = true; p.mesh.material.opacity = 0.8;
+  p.vx = (Math.random() - 0.5) * 3;
+  p.vy = 1.8 + Math.random() * 2.2;
+  p.vz = (Math.random() - 0.5) * 3;
+  p.life = 1.6;
+  smokeIdx = (smokeIdx + 1) % MAX_SMOKE;
+}
+function showSwapHint(text, bad = false){
+  if(!swapHint) return;
+  swapHint.textContent = text;
+  swapHint.classList.toggle('bad', bad);
+  swapHint.classList.add('show');
+  clearTimeout(swapHint._t);
+  swapHint._t = setTimeout(() => swapHint.classList.remove('show'), 1800);
+}
+
+function tryTakeOver(target){
+  if(P.swapCooldown > 0) return;
+  const clsId = target.mesh.userData.classId || 'sedan';
+  const cls = getCarClass(clsId);
+  const owned = Math.floor(save.coins + P.coins);
+  if(owned < cls.cost){ showSwapHint(`NEED ${cls.cost}¢ FOR ${cls.name}`, true); P.swapCooldown = 0.8; return; }
+  let cost = cls.cost;
+  if(P.coins >= cost) P.coins -= cost;
+  else { cost -= P.coins; P.coins = 0; save.coins -= cost; if(save.coins < 0) save.coins = 0; saveGame(save); coinCountEl.textContent = Math.floor(save.coins + P.coins).toLocaleString(); }
+  const pos = target.mesh.position.clone(); const rotY = target.mesh.rotation.y;
+  scene.remove(target.mesh);
+  target.taken = true; target.respawnAt = performance.now() + 6000;
+  scene.remove(player);
+  player = makeCar(clsId, playerColor, { headlight: true });
+  player.position.set(pos.x, P.y, pos.z);
+  scene.add(player);
+  P.carClass = clsId; P.heading = rotY; P.speed *= 0.6; P.swapCooldown = 2.0;
+  carClassEl.textContent = cls.name;
+  abilityState.cooldown = 0; abilityState.active = false;
+  updateAbilityButton();
+  if(socket) socket.emit('setInfo', { name: playerName, color: playerColor, carClass: clsId });
+  showSwapHint(`SHIFTED INTO ${cls.name}`);
+}
+
+function respawnVehicle(veh){
+  const clsId = randomClassId();
+  const newMesh = makeCar(clsId, randomColor());
+  scene.remove(veh.mesh);
+  veh.mesh = newMesh; veh.taken = false; veh.respawnAt = 0;
+  if(veh.type === 'parked'){ newMesh.position.set(veh.x, 0.3, veh.z); newMesh.rotation.y = veh.rot; }
+  else if(veh.type === 'traffic'){ veh.pos = (Math.random()*2-1)*360; newMesh.position.set(veh.axis==='x'?veh.pos:veh.street+veh.lane, 0.3, veh.axis==='x'?veh.street+veh.lane:veh.pos); }
+  else { veh.pos = (Math.random()*2-1)*320; if(veh.axis==='x') newMesh.position.set(veh.pos, HWY_Y+0.3, veh.side*HWY_HALF+veh.off); else newMesh.position.set(veh.side*HWY_HALF+veh.off, HWY_Y+0.3, veh.pos); }
+  scene.add(newMesh);
+}
+
+function updatePlayer(dt){
+  updateAbility(dt);
+  let cls = getCarClass(P.carClass);
+  if(abilityState.active){
+    if(abilityState.key === 'offroad') cls = { ...cls, grip: cls.grip * 1.5 };
+    if(abilityState.key === 'powerslide') cls = { ...cls, grip: cls.grip * 0.7 };
+    if(abilityState.key === 'hyper') cls = { ...cls, speed: cls.speed * 1.5 };
+    if(abilityState.key === 'afterburner') cls = { ...cls, speed: cls.speed * 1.4, accel: cls.accel * 2.5 };
+  }
+  const throttle = keys['w'] ? 1 : 0;
+  const brake = keys['s'] ? 1 : 0;
+  let steer = (keys['a'] ? 1 : 0) - (keys['d'] ? 1 : 0);
+  if(tiltActive && isMobile && steer === 0){
+    const dead = 3; const g = tiltGamma;
+    if(Math.abs(g) > dead) steer += Math.max(-1, Math.min(1, (g - Math.sign(g)*dead) / 28));
+  }
+  steer = Math.max(-1, Math.min(1, steer));
+  const driftKey = keys[' '];
+  const nitro = keys['shift'] && P.nitro > 0 && !P.airborne;
+  let gearMult = 1;
+  if(gearMode === 'off'){ gearMult = 1.25; P.gear = 4; }
+  else if(gearMode === 'manual'){
+    const gearSpeeds = [0, 20, 40, 65, 95, 130, 999];
+    const maxForGear = gearSpeeds[P.gear] || 999;
+    if(P.speed > maxForGear) P.speed = Math.max(maxForGear, P.speed - 30*dt);
+    gearMult = P.gear <= 1 ? 0.8 : (P.gear >= 5 ? 0.9 : 1.1);
+  }
+  if(throttle) P.speed += (nitro ? cls.accel*1.6 : cls.accel) * gearMult * dt;
+  if(brake) P.speed -= 38 * dt;
+  if(!throttle && !brake) P.speed -= Math.sign(P.speed) * Math.min(Math.abs(P.speed), 6*dt);
+  if(P.airborne) P.speed -= Math.sign(P.speed) * Math.min(Math.abs(P.speed), 1.5*dt);
+  const inAfterburner = abilityState.active && abilityState.key === 'afterburner';
+  if(nitro && !inAfterburner) P.nitro = Math.max(0, P.nitro - 24*dt);
+  else if(!inAfterburner) P.nitro = Math.min(100, P.nitro + 4.5*dt);
+  P.speed = Math.max(-22, Math.min(195, P.speed));
+  const speedAbs = Math.abs(P.speed);
+  const canDrift = speedAbs > 12 && !P.airborne;
+  if(driftKey && canDrift){
+    if(!P.drifting){ P.drifting = true; P.driftTimer = 0; P.driftScore = 0; P.driftMultiplier = 1; }
+    P.driftTimer += dt;
+    P.driftMultiplier = Math.min(8, 1 + P.driftTimer * 0.7);
+    if(abilityState.active && abilityState.key === 'driftgod') P.driftMultiplier = Math.min(20, P.driftMultiplier * 2);
+    P.driftScore += Math.round(speedAbs * dt * 12 * P.driftMultiplier);
+  } else {
+    if(P.drifting){
+      if(P.driftScore > 50){
+        P.score += P.driftScore; P.coins += Math.round(P.driftScore / 200);
+        airPop.textContent = `+${P.driftScore} DRIFT ×${P.driftMultiplier.toFixed(1)}`;
+        airPop.classList.add('on'); airPop._popTimer = true;
+        clearTimeout(airPop._t);
+        airPop._t = setTimeout(() => { airPop.classList.remove('on'); airPop._popTimer = false; }, 1500);
+      }
+      P.drifting = false; P.driftScore = 0; P.driftMultiplier = 1;
+    }
+  }
+  if(!P.airborne){
+    const gripMult = P.drifting ? 0.35 : 1.0;
+    const grip = Math.min(speedAbs/18, 1) * cls.grip * gripMult;
+    P.heading += steer * dt * 2.1 * grip * Math.sign(P.speed || 1);
+  } else P.heading += steer * dt * 1.1;
+  const vx = -Math.sin(P.heading) * P.speed;
+  const vz = -Math.cos(P.heading) * P.speed;
+  if(P.drifting){
+    const slide = steer * dt * 8 * P.driftMultiplier;
+    P.slipX += Math.cos(P.heading) * slide;
+    P.slipZ -= Math.sin(P.heading) * slide;
+    P.slipX *= 0.92; P.slipZ *= 0.92;
+  } else { P.slipX *= 0.85; P.slipZ *= 0.85; }
+  let nx = P.x + (vx + P.slipX) * dt;
+  let nz = P.z + (vz + P.slipZ) * dt;
+  let blocked = false;
+  const hitRamp = rampAt(nx, nz);
+  if(hitRamp){
+    const t = (hitRamp.lz + hitRamp.ramp.d/2) / hitRamp.ramp.d;
+    const surface = t * hitRamp.ramp.h;
+    if(!P.airborne && surface > P.y + 1.2) blocked = true;
+  }
+  if(blocked) P.speed *= -0.25;
+  else { P.x = nx; P.z = nz; }
+  const bx = 700;
+  if(P.x < -bx){ P.x = -bx; P.speed *= 0.6; }
+  if(P.x > bx){ P.x = bx; P.speed *= 0.6; }
+  if(P.z < -bx){ P.z = -bx; P.speed *= 0.6; }
+  if(P.z > bx){ P.z = bx; P.speed *= 0.6; }
+  const here = rampAt(P.x, P.z);
+  let rampSurface = 0, rampSlope = 0, rampAx = 0, rampAz = 0;
+  if(here){
+    const t = (here.lz + here.ramp.d/2) / here.ramp.d;
+    rampSurface = t * here.ramp.h;
+    rampSlope = here.ramp._slope;
+    rampAx = here.ramp._ax; rampAz = here.ramp._az;
+  }
+  const gh = groundHeightAt(P.x, P.z, P.y);
+  if(P.airborne){
+    P.vy -= 26*dt;
+    P.y += P.vy * dt; P.airTime += dt;
+    if(P.y <= gh){
+      P.y = gh; P.vy = 0; P.airborne = false;
+      if(P.airTime > 0.35){
+        const reward = Math.round(P.airTime*900 + P.bestAir*40);
+        P.score += reward; P.coins += Math.round(reward/40);
+        if(P.airTime > P.bestAir) P.bestAir = P.airTime;
+        airPop.textContent = `+${reward} AIR`;
+        airPop.classList.add('on'); clearTimeout(airPop._t);
+        airPop._t = setTimeout(() => airPop.classList.remove('on'), 900);
+      }
+      P.airTime = 0;
+    }
+  } else {
+    if(gh < P.y - 0.15){
+      P.airborne = true; P.airTime = 0;
+      if(rampSurface > 0){ const along = vx*rampAx + vz*rampAz; P.vy = Math.max(-3, Math.min(14, rampSlope*along)); }
+      else P.vy = 0;
+    } else {
+      P.y = gh;
+      if(rampSurface > 0){ const along = vx*rampAx + vz*rampAz; P.vy = Math.max(-3, Math.min(14, rampSlope*along)); }
+      else P.vy = 0;
+    }
+  }
+  if(P.glitchCooldown > 0) P.glitchCooldown -= dt;
+  if(window.__BOWL__){
+    const bowl = window.__BOWL__;
+    const distB = Math.hypot(P.x - bowl.x, P.z - bowl.z);
+    if(distB < 8 && Math.abs(P.speed) > 12 && P.glitchCooldown <= 0){
+      P.speed = 195; P.vy = 24; P.airborne = true; P.airTime = 0; P.glitchCooldown = 3.0;
+      showSwapHint('⚡ 700 GLITCH!'); playGlitchSound();
+    }
+  }
+  if(gearMode === 'auto') P.gear = Math.max(1, Math.min(6, Math.ceil(Math.abs(P.speed)/10)));
+  else if(gearMode === 'off') P.gear = 4;
+  player.position.set(P.x, P.y, P.z);
+  player.rotation.y = P.heading;
+  updateEngineSound(P.speed);
+  if(abilityState.active && abilityState.key === 'afterburner' && !P.airborne){
+    const bx2 = P.x + Math.sin(P.heading) * 2.2;
+    const bz2 = P.z + Math.cos(P.heading) * 2.2;
+    spawnSmoke(bx2, 0.4, bz2); spawnSmoke(bx2, 0.4, bz2); spawnSmoke(bx2, 0.6, bz2);
+    addSkidMark(bx2, bz2, P.heading);
+  }
+  if(P.drifting && speedAbs > 15 && !P.airborne){
+    const backX = P.x - Math.sin(P.heading)*1.6;
+    const backZ = P.z - Math.cos(P.heading)*1.6;
+    const lX = backX + Math.cos(P.heading)*0.9;
+    const lZ = backZ - Math.sin(P.heading)*0.9;
+    const rX = backX - Math.cos(P.heading)*0.9;
+    const rZ = backZ + Math.sin(P.heading)*0.9;
+    addSkidMark(lX, lZ, P.heading); addSkidMark(rX, rZ, P.heading);
+    for(let k = 0; k < 4; k++){
+      spawnSmoke(lX + (Math.random()-0.5)*1.2, 0.3 + Math.random()*0.6, lZ + (Math.random()-0.5)*1.2);
+      spawnSmoke(rX + (Math.random()-0.5)*1.2, 0.3 + Math.random()*0.6, rZ + (Math.random()-0.5)*1.2);
+    }
+  }
+  const cp = CHECKPOINTS[P.cpIndex];
+  if(Math.hypot(P.x - cp.x, P.y - cp.y, P.z - cp.z) < 4.4){
+    P.score += 1500; P.coins += 25; P.cpIndex = (P.cpIndex + 1) % CHECKPOINTS.length;
+  }
+  for(const c of coinPickups){
+    if(c.taken) continue;
+    if(Math.hypot(P.x - c.x, P.z - c.z) < 2.5 && Math.abs(P.y - 1.5) < 3){
+      c.taken = true; c.respawnAt = performance.now() + 15000; c.mesh.visible
+      function updateTraffic(dt){
+  const bound = 360;
+  const sirenActive = abilityState.active && abilityState.key === 'siren';
+  for(const t of trafficCars){
+    if(t.taken){ if(performance.now() > t.respawnAt) respawnVehicle(t); continue; }
+    if(sirenActive){ const d = Math.hypot(P.x - t.mesh.position.x, P.z - t.mesh.position.z); t.speed = d < 30 ? 42 : t.baseSpeed; }
+    else t.speed = t.baseSpeed;
+    t.pos += t.dir * t.speed * dt;
+    if(t.pos > bound) t.pos = -bound;
+    if(t.pos < -bound) t.pos = bound;
+    if(t.axis === 'x'){ t.mesh.position.set(t.pos, 0.3, t.street + t.lane); t.mesh.rotation.y = t.dir > 0 ? -Math.PI/2 : Math.PI/2; }
+    else { t.mesh.position.set(t.street + t.lane, 0.3, t.pos); t.mesh.rotation.y = t.dir > 0 ? Math.PI : 0; }
+  }
+  for(const t of hwyTraffic){
+    if(t.taken){ if(performance.now() > t.respawnAt) respawnVehicle(t); continue; }
+    t.pos += t.dir * t.speed * dt;
+    if(t.pos > bound) t.pos = -bound;
+    if(t.pos < -bound) t.pos = bound;
+    if(t.axis === 'x'){ t.mesh.position.set(t.pos, HWY_Y + 0.3, t.side*HWY_HALF + t.off); t.mesh.rotation.y = t.dir > 0 ? -Math.PI/2 : Math.PI/2; }
+    else { t.mesh.position.set(t.side*HWY_HALF + t.off, HWY_Y + 0.3, t.pos); t.mesh.rotation.y = t.dir > 0 ? Math.PI : 0; }
+  }
+}
+
+function updateCoins(now){
+  for(const c of coinPickups){
+    if(c.taken && now > c.respawnAt){ c.taken = false; c.mesh.visible = true; }
+    if(!c.taken){ c.mesh.rotation.z += 0.02; c.mesh.position.y = 1.5 + Math.sin(now*0.003 + c.spin)*0.3; }
+  }
+}
+
+const camTarget = new THREE.Vector3();
+const camLook = new THREE.Vector3();
+function updateCamera(dt){
+  if(camMode === 0){
+    camTarget.set(P.x + Math.sin(P.heading)*11, P.y + 5.5, P.z + Math.cos(P.heading)*11);
+    camLook.set(P.x, P.y + 1.3, P.z);
+  } else if(camMode === 1){
+    camTarget.set(P.x - Math.sin(P.heading)*0.4, P.y + 1.55, P.z - Math.cos(P.heading)*0.4);
+    camLook.set(P.x - Math.sin(P.heading)*14, P.y + 1.1, P.z - Math.cos(P.heading)*14);
+  } else {
+    camTarget.set(P.x, P.y + 45, P.z + 0.5); camLook.set(P.x, P.y, P.z);
+  }
+  const k = 1 - Math.pow(0.0015, dt);
+  camera.position.lerp(camTarget, k);
+  camera.lookAt(camLook);
+}
+
+let timeOfDay = 12.5;
+const SECONDS_PER_HOUR = 22;
+function updateHud(t){
+  if(!started) return;
+  if(t - P.hudAt > 60){
+    P.hudAt = t;
+    speedEl.textContent = Math.round(Math.abs(P.speed)*3.6);
+    gearEl.textContent = P.speed < -0.4 ? 'R' : P.speed < 0.7 ? 'N' : (gearMode === 'off' ? 'D' : String(P.gear));
+    nitroEl.style.width = P.nitro.toFixed(0) + '%';
+    scoreEl.textContent = P.score.toLocaleString();
+    cpEl.textContent = `${P.cpIndex}/${CHECKPOINTS.length}`;
+    airEl.textContent = P.airTime.toFixed(1) + 's';
+    bestAirEl.textContent = P.bestAir.toFixed(2) + 's';
+  }
+  if(t - P.clockAt > 200){
+    P.clockAt = t;
+    const hh = Math.floor(timeOfDay) % 24;
+    const mm = Math.floor((timeOfDay - Math.floor(timeOfDay)) * 60);
+    clockValEl.textContent = String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+    coinCountEl.textContent = Math.floor(save.coins + P.coins).toLocaleString();
+  }
+  if(P.drifting && P.driftScore > 0){
+    driftInfoEl.classList.add('show');
+    driftScoreEl.textContent = P.driftScore;
+    driftMultEl.textContent = P.driftMultiplier.toFixed(1);
+    const tiers = ['NICE!','GREAT!','AWESOME!','INSANE!','LEGENDARY!','UNSTOPPABLE!'];
+    const tierIdx = Math.min(tiers.length - 1, Math.floor(P.driftMultiplier / 1.5));
+    airPop.textContent = tiers[tierIdx];
+    airPop.classList.add('on');
+  } else {
+    driftInfoEl.classList.remove('show');
+    if(!airPop._popTimer) airPop.classList.remove('on');
+  }
+}
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.034, (now - last)/1000);
+  last = now;
+  if(started && !paused){
+    updatePlayer(dt);
+    timeOfDay = (timeOfDay + dt * SECONDS_PER_HOUR / 60) % 24;
+  }
+  updateTraffic(dt);
+  updateCoins(now);
+  for(const s of skidMarks){
+    if(s.life > 0){ s.life -= dt; s.mesh.material.opacity = Math.max(0, s.life * 0.14); if(s.life <= 0) s.mesh.visible = false; }
+  }
+  for(const p of smokeParts){
+    if(p.life > 0){
+      p.life -= dt;
+      p.mesh.position.x += p.vx * dt;
+      p.mesh.position.y += p.vy * dt;
+      p.mesh.position.z += p.vz * dt;
+      p.mesh.scale.multiplyScalar(1 + dt * 1.4);
+      p.mesh.material.opacity = Math.max(0, p.life * 0.55);
+      if(p.life <= 0) p.mesh.visible = false;
+    }
+  }
+  updateCamera(dt);
+  updateHud(now);
+  applyTimeOfDay(scene, renderer, sun, moon, hemi, amb, timeOfDay);
+  for(const pid in chatBubbles){
+    const o = otherPlayers[pid];
+    if(o && chatBubbles[pid].sprite){
+      chatBubbles[pid].sprite.position.set(o.mesh.position.x, o.mesh.position.y + 3.2, o.mesh.position.z);
+    }
+  }
+  sun.target.position.set(P.x, 0, P.z);
+  sun.position.set(P.x + sun.position.x * 0.3, sun.position.y, P.z + sun.position.z * 0.3);
+  sun.target.updateMatrixWorld();
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+
+function resize(){
+  const w = canvasEl.clientWidth, h = canvasEl.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+window.addEventListener('resize', resize);
+resize();
+
+function startGameWithFallback(){
+  try {
+    spawnTraffic();
+    spawnCoins();
+    started = true;
+    setPaused(false);
+    initAudio();
+    updateAbilityButton();
+    menuEl.style.display = 'none';
+    hudEl.style.display = '';
+    infoEl.style.display = '';
+    clockEl.style.display = '';
+    if(isMobile){
+      p1Ctl.style.display = 'flex';
+      pedalCtl.style.display = 'flex';
+    }
+    chatToggleEl.style.display = 'block';
+    showShiftControls();
+    loadingEl.classList.add('hide');
+    last = performance.now();
+  } catch(e){
+    console.error('Start failed:', e);
+    loadingEl.textContent = 'ERROR: ' + (e.message || e).slice(0, 50);
+  }
+}
+
+// START OVERLAY
+if(startColors){
+  startColors.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-color]');
+    if(!btn) return;
+    startColors.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    playerColor = parseInt(btn.dataset.color.slice(1), 16);
+    localStorage.setItem('playerColor', btn.dataset.color);
+    if(player.userData.bodyMaterial) player.userData.bodyMaterial.color.setHex(playerColor);
+    if(socket) socket.emit('setInfo', { name: playerName, color: playerColor });
+  });
+}
+const usernameInputEl = $('usernameInput');
+if(usernameInputEl) usernameInputEl.value = playerName;
+
+if(startOverlayBtn){
+  startOverlayBtn.addEventListener('click', () => {
+    const name = (usernameInputEl?.value || 'Player').trim().slice(0, 20) || 'Player';
+    localStorage.setItem('username', name);
+    if(startOverlay) startOverlay.classList.add('hide');
+    if(menuEl) menuEl.style.display = '';
+    if(userNameEl) userNameEl.textContent = name;
+    if(userAvatarEl) userAvatarEl.textContent = name.charAt(0).toUpperCase();
+    if(socket) socket.emit('setInfo', { name, color: playerColor });
+  });
+}
+
+// THE MISSING START BUTTON HANDLER
+if(startBtn){
+  startBtn.addEventListener('click', async () => {
+    startBtn.disabled = true;
+    startBtn.textContent = 'LOADING CARS…';
+    if(loadingEl){ loadingEl.classList.remove('hide'); loadingEl.textContent = 'LOADING CARS 0/10…'; }
+    requestTilt();
+    if(musicOn){ try { startMusic(); } catch(e){} }
+
+    let forceStarted = false;
+    const timeoutId = setTimeout(() => {
+      if(forceStarted) return;
+      forceStarted = true;
+      console.warn('⚠️ Model load timeout');
+      if(loadingEl) loadingEl.textContent = 'TIMEOUT — STARTING…';
+      try { startGameWithFallback(); } catch(e){}
+    }, 8000);
+
+    try {
+      await preloadAllCars((done, total) => {
+        if(loadingEl) loadingEl.textContent = `LOADING CARS ${done}/${total}…`;
+      });
+      if(forceStarted) return;
+      clearTimeout(timeoutId);
+      forceStarted = true;
+      try {
+        scene.remove(player);
+        P.carClass = selectedCarClass;
+        player = makeCar(selectedCarClass, playerColor, { headlight: true });
+        player.position.set(P.x, P.y, P.z);
+        player.rotation.y = P.heading;
+        scene.add(player);
+        if(carClassEl) carClassEl.textContent = getCarClass(selectedCarClass).name;
+        if(socket) socket.emit('setInfo', { name: playerName, color: playerColor, carClass: selectedCarClass });
+      } catch(e){}
+      startGameWithFallback();
+    } catch(err){
+      if(forceStarted) return;
+      clearTimeout(timeoutId);
+      forceStarted = true;
+      console.error(err);
+      startGameWithFallback();
+    }
+    startBtn.disabled = false;
+  });
+}
+
+if(pauseBtn) pauseBtn.addEventListener('click', () => {
+  if(!started) return;
+  if(!paused){ save.coins += P.coins; saveGame(save); if(coinCountEl) coinCountEl.textContent = Math.floor(save.coins).toLocaleString(); P.coins = 0; }
+  setPaused(!paused);
+});
+
+if(musicBtn) musicBtn.addEventListener('click', () => {
+  musicOn = !musicOn;
+  musicBtn.classList.toggle('off', !musicOn);
+  if(musicOn){ try { startMusic(); } catch(e){} }
+  else { try { stopMusic(); } catch(e){} }
+});
+
+if(fsBtn) fsBtn.addEventListener('click', () => document.documentElement.requestFullscreen?.());
+
+setInterval(() => {
+  if(started && !paused && P.coins > 0){ save.coins += P.coins; P.coins = 0; saveGame(save); }
+}, 8000);
+
+requestAnimationFrame(loop);
