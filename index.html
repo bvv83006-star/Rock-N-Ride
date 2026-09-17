@@ -7,6 +7,19 @@
 <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
+  <div id="errorBox" style="position:fixed;top:0;left:0;right:0;background:#ff3b30;color:#fff;padding:15px;font:14px monospace;z-index:99999;display:none;white-space:pre-wrap;max-height:60vh;overflow:auto"></div>
+<script>
+window.addEventListener('error', e => {
+  const box = document.getElementById('errorBox');
+  box.style.display = 'block';
+  box.textContent += '❌ ' + (e.message || e.error) + '\n   at ' + (e.filename || '?') + ':' + (e.lineno || '?') + '\n\n';
+});
+window.addEventListener('unhandledrejection', e => {
+  const box = document.getElementById('errorBox');
+  box.style.display = 'block';
+  box.textContent += '❌ PROMISE: ' + (e.reason?.message || e.reason) + '\n\n';
+});
+</script>
 <main class="game-shell">
 <div class="game-canvas" id="canvas"></div>
 <header class="topbar">
