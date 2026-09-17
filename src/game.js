@@ -712,8 +712,35 @@ function updatePlayer(dt){
   for(const c of coinPickups){
     if(c.taken) continue;
     if(Math.hypot(P.x - c.x, P.z - c.z) < 2.5 && Math.abs(P.y - 1.5) < 3){
-      c.taken = true; c.respawnAt = performance.now() + 15000; c.mesh.visible
-      function updateTraffic(dt){
+     c.taken = true; c.respawnAt = performance.now() + 15000; c.mesh.visible = false;
+      P.coins += 5; P.score += 200; playCoinSound();
+    }
+  }
+  if(P.swapCooldown > 0) P.swapCooldown -= dt;
+  else {
+    const TARGET_R = 3.2;
+    for(const t of trafficCars){
+      if(t.taken) continue;
+      if(Math.hypot(P.x - t.mesh.position.x, P.z - t.mesh.position.z) < TARGET_R){ tryTakeOver(t); break; }
+    }
+    if(!P.swapCooldown){
+      for(const t of hwyTraffic){
+        if(t.taken) continue;
+        if(Math.hypot(P.x - t.mesh.position.x, P.z - t.mesh.position.z) < TARGET_R){ tryTakeOver(t); break; }
+      }
+    }
+  }
+  if(socket && started && !paused){
+    if(!P._lastNet) P._lastNet = 0;
+    const now = performance.now();
+    if(now - P._lastNet > 60){
+      socket.emit('playerMovement', { x:P.x, y:P.y, z:P.z, rotY:P.heading, carClass:P.carClass, color:playerColor });
+      P._lastNet = now;
+    }
+  }
+}
+
+function updateTraffic(dt){
   const bound = 360;
   const sirenActive = abilityState.active && abilityState.key === 'siren';
   for(const t of trafficCars){
