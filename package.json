@@ -1,16 +1,15 @@
 {
-  "name": "rocknride-cars",
+  "name": "rock-n-ride",
   "version": "1.0.0",
-  "description": "Multiplayer open city driving game",
+  "description": "Rock'n Ride Cars — 3D driving game",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  },
   "dependencies": {
-    "express": "^4.19.2",
-    "socket.io": "^4.7.5"
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
