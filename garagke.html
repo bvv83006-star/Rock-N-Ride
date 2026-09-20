@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="theme-color" content="#0a0a0e" />
+<title>Garage — Rock'n Ride Cars</title>
+<link rel="stylesheet" href="/style.css" />
+<style>
+.garage-wrap{position:fixed;inset:0;overflow-y:auto;background:radial-gradient(circle at 20% 15%,#1a0a3a 0%,transparent 55%),radial-gradient(circle at 80% 85%,#3a0a1e 0%,transparent 55%),#0a0a0e}
+.garage-head{position:sticky;top:0;z-index:10;background:#0a0a0ecc;backdrop-filter:blur(20px);border-bottom:1px solid #ffffff14;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+.garage-head h1{font-size:22px;font-weight:900;letter-spacing:-.03em;font-style:italic}
+.garage-head h1 span{color:#ffd400}
+.garage-head .stats{display:flex;gap:8px;align-items:center}
+.cars-grid{max-width:1100px;margin:0 auto;padding:24px 20px 100px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.car-card{background:#16161c;border:1.5px solid #ffffff14;border-radius:18px;padding:18px;transition:border-color .2s;position:relative}
+.car-card.owned{border-color:#38f7c040}
+.car-card.selected{border-color:#ffd400;box-shadow:0 0 0 3px #ffd40033,0 20px 60px #000}
+.car-card.locked{opacity:.55}
+.car-name-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.car-name{font-size:16px;font-weight:900;letter-spacing:-.02em;font-style:italic}
+.car-badge{font-size:8px;font-weight:900;padding:3px 7px;border-radius:6px;background:#38f7c025;color:#38f7c0;letter-spacing:.08em}
+.car-badge.owned-badge{background:#ffd40025;color:#ffd400}
+.car-badge.selected-badge{background:#ffd400;color:#0a0a0e}
+.car-stats{display:grid;grid-template-columns:32px 1fr;gap:6px 10px;margin:14px 0;font-size:9px;font-weight:900;color:#8a8a99;letter-spacing:.06em;align-items:center}
+.car-stats .bar{height:6px;background:#ffffff14;border-radius:3px;overflow:hidden}
+.car-stats .bar i{display:block;height:100%;background:linear-gradient(90deg,#ffd400,#ff8c00);border-radius:3px}
+.car-stats .bar.grip i{background:linear-gradient(90deg,#38f7c0,#00d9ff)}
+.car-stats .bar.accel i{background:linear-gradient(90deg,#ff3b30,#ff8c00)}
+.car-cost{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid #ffffff14;font-size:12px;font-weight:900;color:#ffd400;letter-spacing:.06em}
+.car-cost i{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff2a8,#e8a018 60%,#8a5a00);display:inline-block;margin-right:5px;vertical-align:-2px}
+.car-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:12px}
+.car-actions button{padding:10px 6px;font-size:9px;font-weight:900;letter-spacing:.06em;border-radius:9px;background:#0a0a0e;border:1.5px solid #ffffff1a;color:#fff;text-align:center}
+.car-actions button:active{transform:scale(.96)}
+.car-actions button.primary{background:#ffd400;color:#0a0a0e;border-color:#ffd400}
+.car-actions button.buy{background:#38f7c0;color:#0a0a0e;border-color:#38f7c0}
+.car-actions button.danger{border-color:#ff3b3066;color:#ff3b30}
+.car-actions button:disabled{opacity:.3}
+.upgrade-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:6px}
+.upgrade-row button{padding:8px 4px;font-size:8px;font-weight:900;letter-spacing:.04em;border-radius:8px;background:#16161c;border:1px solid #ffffff14;color:#8a8a99}
+.upgrade-row button:active{border-color:#38f7c0;color:#38f7c0}
+.upgrade-row button b{display:block;color:#ffd400;font-size:9px;margin-top:2px}
+.bk-row{display:flex;gap:4px;margin-top:8px;align-items:center;flex-wrap:wrap}
+.bk-label{font-size:8px;font-weight:900;color:#8a8a99;letter-spacing:.08em;width:100%;margin-bottom:2px}
+.bk-row button{padding:6px 8px;font-size:8px;font-weight:900;letter-spacing:.04em;border-radius:7px;background:#0a0a0e;border:1px solid #ffffff1a;color:#8a8a99}
+.bk-row button.on{background:#ffd400;color:#0a0a0e;border-color:#ffd400}
+.bk-row button:active{transform:scale(.94)}
+</style>
+</head>
+<body>
+<div class="garage-wrap">
+  <header class="garage-head">
+    <h1>GARAGE <span>· ROCK'N RIDE</span></h1>
+    <div class="stats">
+      <div class="pill gold-pill"><i></i><span id="coinCount">0</span></div>
+      <div class="pill blue-pill"><i></i><span id="gearCount">0</span></div>
+      <a class="icon-btn" href="/">✕</a>
+    </div>
+  </header>
+  <div class="cars-grid" id="carsGrid"></div>
+</div>
+<script type="module" src="/garage.js"></script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="theme-color" content="#0a0a0e" />
+<title>Settings — Rock'n Ride Cars</title>
+<link rel="stylesheet" href="/style.css" />
+<style>
+.settings-wrap{position:fixed;inset:0;overflow-y:auto;background:radial-gradient(circle at 20% 15%,#1a0a3a 0%,transparent 55%),radial-gradient(circle at 80% 85%,#3a0a1e 0%,transparent 55%),#0a0a0e}
+.settings-head{position:sticky;top:0;z-index:10;background:#0a0a0ecc;backdrop-filter:blur(20px);border-bottom:1px solid #ffffff14;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+.settings-head h1{font-size:22px;font-weight:900;letter-spacing:-.03em;font-style:italic}
+.settings-head h1 span{color:#ffd400}
+.tabs{display:flex;gap:6px;max-width:700px;margin:20px auto 0;padding:0 20px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:80px;padding:12px 10px;background:#16161c;border:1.5px solid #ffffff14;border-radius:12px;color:#8a8a99;font-size:10px;font-weight:900;letter-spacing:.1em;text-align:center;transition:all .15s;white-space:nowrap}
+.tab.on{background:#ffd400;color:#0a0a0e;border-color:#ffd400;box-shadow:0 8px 30px #ffd40033}
+.settings-body{max-width:700px;margin:20px auto 80px;padding:0 20px}
+.panel{display:none;animation:fadeIn .2s}
+.panel.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.group{background:#16161c;border:1px solid #ffffff14;border-radius:16px;padding:18px;margin-bottom:14px}
+.group h3{font-size:11px;font-weight:900;letter-spacing:.16em;color:#8a8a99;text-transform:uppercase;margin-bottom:14px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #ffffff08}
+.row:last-child{border-bottom:0}
+.row label{font-size:13px;font-weight:700;color:#fff}
+.row .sub{display:block;font-size:10px;color:#8a8a99;font-weight:600;margin-top:2px}
+.toggle{width:46px;height:26px;background:#0a0a0e;border:1.5px solid #ffffff22;border-radius:14px;position:relative;transition:all .2s;flex-shrink:0}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#8a8a99;transition:all .2s}
+.toggle.on{background:#ffd400;border-color:#ffd400}
+.toggle.on::after{left:24px;background:#0a0a0e}
+
+.slider-row{padding:12px 0;border-bottom:1px solid #ffffff08}
+.slider-row:last-child{border-bottom:0}
+.slider-label{display:flex;justify-content:space-between;margin-bottom:8px}
+.slider-label span{font-size:13px;font-weight:700;color:#fff}
+.slider-label b{font-size:12px;color:#ffd400;font-weight:900;font-family:monospace}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:#ffffff14;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#ffd400;cursor:pointer;box-shadow:0 0 12px #ffd40088}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#ffd400;cursor:pointer;border:0}
+
+.segmented{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px 0}
+.segmented.four{grid-template-columns:repeat(4,1fr)}
+.segmented.two{grid-template-columns:repeat(2,1fr)}
+.seg{background:#0a0a0e;border:1.5px solid #ffffff14;border-radius:10px;padding:11px 8px;color:#8a8a99;font-size:10px;font-weight:900;letter-spacing:.06em;text-align:center;transition:all .15s}
+.seg.on{background:#38f7c0;color:#0a0a0e;border-color:#38f7c0;box-shadow:0 6px 20px #38f7c033}
+
+.save-btn{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);width:min(340px,calc(100vw - 40px));padding:15px 20px;background:linear-gradient(135deg,#ffd400,#ff8c00);color:#0a0a0e;font-size:14px;font-weight:900;letter-spacing:.1em;border-radius:14px;box-shadow:0 10px 40px #ffd40055;text-align:center}
+</style>
+</head>
+<body>
+<div class="settings-wrap">
+  <header class="settings-head">
+    <h1>SETTINGS <span>· ROCK'N RIDE</span></h1>
+    <a class="icon-btn" href="/">✕</a>
+  </header>
+
+  <div class="tabs">
+    <button class="tab on" data-tab="controls">CONTROLS</button>
+    <button class="tab" data-tab="graphics">GRAPHICS</button>
+    <button class="tab" data-tab="sound">SOUND</button>
+    <button class="tab" data-tab="game">GAME</button>
+  </div>
+
+  <div class="settings-body">
+
+    <!-- CONTROLS -->
+    <div class="panel on" data-panel="controls">
+      <div class="group">
+        <h3>Steering Type</h3>
+        <div class="segmented four" id="steerType">
+          <button class="seg on" data-val="buttons">BUTTONS</button>
+          <button class="seg" data-val="wheel">WHEEL</button>
+          <button class="seg" data-val="tilt">TILT</button>
+          <button class="seg" data-val="keys">KEYS</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Sensitivity</h3>
+        <div class="slider-row">
+          <div class="slider-label"><span>Tilt Sensitivity</span><b id="tiltVal">50%</b></div>
+          <input type="range" id="tiltSens" min="0" max="100" value="50" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-label"><span>Steering Sensitivity</span><b id="steerVal">70%</b></div>
+          <input type="range" id="steerSens" min="0" max="100" value="70" />
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Options</h3>
+        <div class="row">
+          <div><label>Auto Accelerate</label><span class="sub">Car moves forward automatically</span></div>
+          <div class="toggle" id="autoAccel"></div>
+        </div>
+        <div class="row">
+          <div><label>Invert Steering</label><span class="sub">Flip left/right controls</span></div>
+          <div class="toggle" id="invertSteer"></div>
+        </div>
+        <div class="row">
+          <div><label>Vibration</label><span class="sub">Phone vibrates on impact</span></div>
+          <div class="toggle on" id="vibration"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRAPHICS -->
+    <div class="panel" data-panel="graphics">
+      <div class="group">
+        <h3>Quality</h3>
+        <div class="segmented four" id="gfxQuality">
+          <button class="seg" data-val="low">LOW</button>
+          <button class="seg on" data-val="medium">MEDIUM</button>
+          <button class="seg" data-val="high">HIGH</button>
+          <button class="seg" data-val="ultra">ULTRA</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Effects</h3>
+        <div class="row">
+          <div><label>Shadows</label><span class="sub">Realistic shadows from sun</span></div>
+          <div class="toggle on" id="shadows"></div>
+        </div>
+        <div class="row">
+          <div><label>Bloom</label><span class="sub">Glow on lights</span></div>
+          <div class="toggle on" id="bloom"></div>
+        </div>
+        <div class="row">
+          <div><label>Motion Blur</label><span class="sub">Speed streak effect</span></div>
+          <div class="toggle" id="motionBlur"></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Distance</h3>
+        <div class="slider-row">
+          <div class="slider-label"><span>Draw Distance</span><b id="distVal">70%</b></div>
+          <input type="range" id="drawDist" min="20" max="100" value="70" />
+        </div>
+      </div>
+    </div>
+
+    <!-- SOUND -->
+    <div class="panel" data-panel="sound">
+      <div class="group">
+        <h3>Volume</h3>
+        <div class="slider-row">
+          <div class="slider-label"><span>Master Volume</span><b id="volMasterVal">100%</b></div>
+          <input type="range" id="volMaster" min="0" max="100" value="100" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-label"><span>Engine Volume</span><b id="volEngineVal">80%</b></div>
+          <input type="range" id="volEngine" min="0" max="100" value="80" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-label"><span>Music Volume</span><b id="volMusicVal">60%</b></div>
+          <input type="range" id="volMusic" min="0" max="100" value="60" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-label"><span>SFX Volume</span><b id="volSfxVal">100%</b></div>
+          <input type="range" id="volSfx" min="0" max="100" value="100" />
+        </div>
+      </div>
+    </div>
+
+    <!-- GAME -->
+    <div class="panel" data-panel="game">
+      <div class="group">
+        <h3>Display</h3>
+        <div class="segmented two" id="units">
+          <button class="seg on" data-val="kmh">KM/H</button>
+          <button class="seg" data-val="mph">MPH</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Options</h3>
+        <div class="row">
+          <div><label>Minimap</label><span class="sub">Show map in corner</span></div>
+          <div class="toggle on" id="minimap"></div>
+        </div>
+        <div class="row">
+          <div><label>Damage</label><span class="sub">Car takes visual damage</span></div>
+          <div class="toggle" id="damage"></div>
+        </div>
+        <div class="row">
+          <div><label>Show FPS</label><span class="sub">Display frames per second</span></div>
+          <div class="toggle" id="showFps"></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Traffic</h3>
+        <div class="segmented" id="traffic">
+          <button class="seg" data-val="low">LOW</button>
+          <button class="seg on" data-val="medium">MEDIUM</button>
+          <button class="seg" data-val="high">HIGH</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Camera</h3>
+        <div class="segmented" id="camera">
+          <button class="seg on" data-val="chase">CHASE</button>
+          <button class="seg" data-val="hood">HOOD</button>
+          <button class="seg" data-val="top">TOP</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <button class="save-btn" id="saveBtn">SAVE & CLOSE ›</button>
+</div>
+
+<script type="module" src="/settings.js"></script>
+</body>
+</html>
