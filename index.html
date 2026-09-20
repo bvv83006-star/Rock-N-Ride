@@ -1,113 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Rock'n Ride Cars</title>
-<link rel="stylesheet" href="/style.css" />
-</head>
-<body>
-  <div id="errorBox" style="position:fixed;top:0;left:0;right:0;background:#ff3b30;color:#fff;padding:15px;font:14px monospace;z-index:99999;display:none;white-space:pre-wrap;max-height:60vh;overflow:auto"></div>
-<script>
-window.addEventListener('error', e => {
-  const box = document.getElementById('errorBox');
-  box.style.display = 'block';
-  box.textContent += '❌ ' + (e.message || e.error) + '\n   at ' + (e.filename || '?') + ':' + (e.lineno || '?') + '\n\n';
-});
-window.addEventListener('unhandledrejection', e => {
-  const box = document.getElementById('errorBox');
-  box.style.display = 'block';
-  box.textContent += '❌ PROMISE: ' + (e.reason?.message || e.reason) + '\n\n';
-});
-</script>
-<main class="game-shell">
-<div class="game-canvas" id="canvas"></div>
-<header class="topbar">
-<div class="brand"><span>ROCK'N</span> RIDE <b>CARS</b></div>
-<div class="top-actions">
-<div class="user-pill" id="userPill"><span class="avatar" id="userAvatar">P</span><span id="userName">Player</span></div>
-<div class="coin-pill"><i></i><span id="coinCount">0</span></div>
-  <button class="icon-button" id="gearModeBtn" title="Gear Mode">⚙ A</button>
-</button>
-<button class="icon-button" id="musicBtn" title="Music">🎵</button>
-<button class="icon-button" id="fsBtn">⛶</button>
-<button class="icon-button" id="pauseBtn">Ⅱ</button>
-</div>
-</header>
-<section class="race-hud" id="hud" style="display:none">
-<div class="speed-block"><strong id="speedEl">0</strong><span>KM/H</span></div>
-<div class="gear-block"><small>GEAR</small><b id="gearEl">N</b></div>
-<div class="nitro-block"><span>NITRO</span><div><i id="nitroEl" style="width:100%"></i></div></div>
-</section>
-<section class="race-info" id="info" style="display:none">
-<span>SCORE <b id="scoreEl">0</b></span>
-<span>STUNT <b id="cpEl">0/16</b></span>
-<span>AIRBORNE <b id="airEl">0.0s</b></span>
-<span>BEST AIR <b id="bestAirEl">0.0s</b></span>
-<span>CAR <b id="carClassEl">SEDAN</b></span>
-</section>
-<div class="drift-info" id="driftInfo">DRIFT <b id="driftScore">0</b> ×<b id="driftMult">1.0</b></div>
-<div class="ability-info" id="abilityInfo">POWER <b id="abilityName">—</b> <b id="abilityTimer">0.0</b></div>
-<div class="clock" id="clock" style="display:none"><small>TIME</small><span id="clockEl">12:00</span></div>
-<div class="airpop" id="airPop">+ AIR</div>
-<div class="swap-hint" id="swapHint"></div>
-<div class="touch-controls p1-controls" id="p1Ctl" style="display:none">
-<button data-key="a">◀</button><button data-key="d">▶</button>
-</div>
-<div class="touch-controls pedals" id="pedalCtl" style="display:none">
-<button id="abilityBtn" class="ability-button">—</button>
-<button data-key=" " class="drift-button">DRIFT</button>
-<button data-key="shift" class="nitro-button">N₂O</button>
-<button data-key="s" class="brake-button">BRAKE</button>
-<button data-key="w" class="gas-button">ACC</button>
-</div>
-<section class="menu-card" id="menu">
-<p class="eyebrow">ROCK'N RIDE CARS • 10 CARS • 10 POWERS</p>
-<h1>ROCK'N RIDE <em>CARS</em></h1>
-<p class="intro">10 cars. Every car has a unique power. Press E or tap ABILITY. Tilt your phone to steer. Find the glowing bowl to unlock the hidden 700 glitch.</p>
-<div class="setup-grid">
-<div class="setting"><label>STARTING CAR — EACH HAS A POWER</label><div class="car-grid" id="carGrid"></div></div>
-<div class="setting"><label>PAINT</label><div class="paint-row" id="paintRow">
-<button data-color="#ff3b30" class="selected" style="background:#ff3b30"></button>
-<button data-color="#ff8c00" style="background:#ff8c00"></button>
-<button data-color="#ffd400" style="background:#ffd400"></button>
-<button data-color="#38f7c0" style="background:#38f7c0"></button>
-<button data-color="#00d9ff" style="background:#00d9ff"></button>
-<button data-color="#2c7cff" style="background:#2c7cff"></button>
-<button data-color="#8833cc" style="background:#8833cc"></button>
-<button data-color="#ff1493" style="background:#ff1493"></button>
-<button data-color="#f7f7fb" style="background:#f7f7fb"></button>
-<button data-color="#8a8a99" style="background:#8a8a99"></button>
-<button data-color="#222222" style="background:#222222"></button>
-<button data-color="#39ff14" style="background:#39ff14"></button>
-</div></div>
-</div>
-<button class="start-button" id="startBtn">START ENGINE <span>›</span></button>
-<div class="controls-help">
-<p><b>KEYS</b> W throttle • S brake • A/D steer • Space drift • Shift nitro • E ability</p>
-<p><b>TILT</b> Rotate phone to steer • <b>GLITCH</b> Find the glowing bowl</p>
-</div>
-</section>
-<div class="scanlines"></div>
-<div class="loading hide" id="loading">LOADING…</div>
-<div class="chat-box" id="chatBox">
-<div class="chat-messages" id="chatMessages"></div>
-<div class="chat-input-row">
-<input type="text" id="chatInput" maxlength="100" placeholder="Type message…" autocomplete="off" />
-<button id="chatSend">SEND</button>
-</div>
-</div>
-<button class="chat-toggle" id="chatToggle">💬</button>
-</main>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: monospace; color: #fff; user-select: none; }
+  #canvas { position: fixed; inset: 0; }
+  #canvas canvas { display: block; }
+
+  #startScreen { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: radial-gradient(circle at 50% 30%, #1a2a44, #05070c 70%); padding: 20px; }
+  #startScreen h1 { font-size: 42px; letter-spacing: 6px; color: #ffd400; text-shadow: 0 0 20px #ff6a3a, 0 4px 10px #000; margin-bottom: 8px; text-align: center; }
+  #startScreen h1 span { color: #38f7c0; }
+  #nameInput { padding: 12px 16px; font-size: 16px; font-family: monospace; background: rgba(0,0,0,0.5); border: 2px solid rgba(255,212,0,0.5); border-radius: 8px; color: #fff; outline: none; width: 260px; text-align: center; letter-spacing: 2px; }
+  #nameInput:focus { border-color: #38f7c0; }
+  #startColors { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 320px; }
+  #startColors button { width: 44px; height: 44px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.15s, border-color 0.2s; }
+  #startColors button.on { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 18px currentColor; }
+  #playBtn { padding: 16px 60px; font-size: 22px; font-family: monospace; letter-spacing: 4px; background: linear-gradient(135deg, #ff3b30, #ff6a3a); border: none; border-radius: 10px; color: #fff; cursor: pointer; font-weight: 900; box-shadow: 0 6px 24px rgba(255,80,40,0.5); transition: transform 0.15s; }
+  #playBtn:hover { transform: translateY(-2px) scale(1.03); }
+  #playBtn:active { transform: translateY(1px); }
+
+  #gameShell { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+  #gameShell.hidden, #startScreen.hidden, #pauseOverlay.hidden, #loading.hidden { display: none; }
+
+  #hud { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; pointer-events: none; font-size: 13px; }
+  .hudPanel { background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; backdrop-filter: blur(4px); }
+  #hudLeft { display: flex; flex-direction: column; gap: 4px; }
+  #hudRight { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+  .hudRow { display: flex; gap: 12px; align-items: center; }
+  .hudLabel { color: #9ab; font-size: 10px; letter-spacing: 2px; }
+  .hudVal { color: #fff; font-weight: 700; font-size: 15px; }
+  #speedEl { color: #38f7c0; }
+  #gearEl { color: #ffd400; }
+  #nitroBar { width: 100px; height: 8px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; }
+  #nitroEl { height: 100%; background: linear-gradient(90deg, #2c7cff, #38f7c0); width: 100%; transition: width 0.1s; }
+  #scoreEl, #hudCoins { color: #ffd400; }
+  #carNameEl { color: #38f7c0; letter-spacing: 2px; }
+
+  #minimapCanvas { position: fixed; top: 12px; right: 12px; width: 180px; height: 180px; z-index: 20; border-radius: 50%; pointer-events: none; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+  @media (max-width: 600px) { #minimapCanvas { width: 130px; height: 130px; } }
+
+  #driftPop { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%) scale(0.8); opacity: 0; transition: opacity 0.15s, transform 0.15s; pointer-events: none; text-align: center; }
+  #driftPop.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  #driftScore { font-size: 42px; font-weight: 900; color: #ffd400; text-shadow: 0 0 20px #ff6a3a, 0 4px 12px #000; letter-spacing: 3px; }
+  #driftMult { font-size: 20px; color: #38f7c0; font-weight: 700; text-shadow: 0 2px 8px #000; }
+
+  #bigText { position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%) scale(0.7); opacity: 0; font-size: 46px; font-weight: 900; color: #fff; letter-spacing: 6px; text-shadow: 0 0 24px #38f7c0, 0 4px 16px #000; transition: opacity 0.2s, transform 0.2s; pointer-events: none; text-align: center; }
+  #bigText.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+  #topButtons { position: fixed; top: 210px; right: 12px; display: flex; flex-direction: column; gap: 8px; z-index: 30; pointer-events: auto; }
+  #topButtons button { width: 44px; height: 44px; border-radius: 8px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 18px; cursor: pointer; font-family: monospace; }
+  #topButtons button:hover { background: rgba(56,247,192,0.25); }
+  #musicBtn.off { opacity: 0.4; }
+
+  #pauseOverlay { position: fixed; inset: 0; z-index: 150; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+  #pauseOverlay h2 { font-size: 40px; letter-spacing: 8px; color: #ffd400; margin-bottom: 20px; }
+  #pauseOverlay button { padding: 14px 50px; font-size: 18px; font-family: monospace; letter-spacing: 3px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; color: #fff; cursor: pointer; }
+  #pauseOverlay button:hover { background: rgba(56,247,192,0.25); border-color: #38f7c0; }
+
+  #loading { position: fixed; inset: 0; z-index: 120; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; font-size: 22px; letter-spacing: 4px; color: #38f7c0; text-shadow: 0 0 12px #38f7c0; }
+
+  #touchLeft, #touchRight { position: fixed; bottom: 24px; z-index: 50; display: none; gap: 12px; }
+  #touchLeft { left: 24px; }
+  #touchRight { right: 24px; }
+  .touchBtn { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.4); color: #fff; font-size: 24px; font-weight: 900; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; touch-action: none; }
+  .touchBtn.active { background: rgba(56,247,192,0.5); border-color: #38f7c0; }
+
+  #userInfo { display: flex; align-items: center; gap: 8px; }
+  #userAvatar { width: 30px; height: 30px; border-radius: 50%; background: #ff3b30; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; }
+  #userName { font-size: 12px; letter-spacing: 1px; }
+</style>
+
 <script type="importmap">
 {
   "imports": {
-    "three": "https://unpkg.com/three@0.185.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.185.0/examples/jsm/"
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
   }
 }
 </script>
-<script src="/socket.io/socket.io.js"></script>
-<script type="module" src="/src/game.js"></script>
+</head>
+<body>
+
+<div id="canvas"></div>
+
+<div id="startScreen">
+  <h1>ROCK<span>'N</span>RIDE</h1>
+  <div id="userInfo">
+    <div id="userAvatar">P</div>
+    <div id="userName">Player</div>
+  </div>
+  <input id="nameInput" type="text" placeholder="YOUR NAME" maxlength="20">
+  <div id="startColors">
+    <button data-color="#ff3b30" style="background:#ff3b30;color:#ff3b30"></button>
+    <button data-color="#38f7c0" style="background:#38f7c0;color:#38f7c0"></button>
+    <button data-color="#ffd400" style="background:#ffd400;color:#ffd400"></button>
+    <button data-color="#2c7cff" style="background:#2c7cff;color:#2c7cff"></button>
+    <button data-color="#ff6a3a" style="background:#ff6a3a;color:#ff6a3a"></button>
+    <button data-color="#ff5aa0" style="background:#ff5aa0;color:#ff5aa0"></button>
+    <button data-color="#ffffff" style="background:#fff;color:#fff"></button>
+    <button data-color="#111111" style="background:#111;color:#111"></button>
+  </div>
+  <button id="playBtn">PLAY</button>
+</div>
+
+<div id="gameShell" class="hidden">
+  <div id="hud">
+    <div id="hudLeft">
+      <div class="hudPanel">
+        <div class="hudRow"><span class="hudLabel">SPEED</span><span class="hudVal" id="speedEl">0</span><span class="hudLabel">km/h</span></div>
+        <div class="hudRow"><span class="hudLabel">GEAR</span><span class="hudVal" id="gearEl">N</span></div>
+        <div class="hudRow"><span class="hudLabel">NITRO</span><div id="nitroBar"><div id="nitroEl"></div></div></div>
+      </div>
+    </div>
+    <div id="hudRight">
+      <div class="hudPanel">
+        <div class="hudRow"><span class="hudLabel">SCORE</span><span class="hudVal" id="scoreEl">0</span></div>
+        <div class="hudRow"><span class="hudLabel">CAR</span><span class="hudVal" id="carNameEl">SEDAN</span></div>
+        <div class="hudRow"><span class="hudLabel">COINS</span><span class="hudVal" id="hudCoins">0</span></div>
+        <div class="hudRow"><span class="hudLabel">AIR</span><span class="hudVal" id="airEl">0.0s</span><span class="hudLabel">BEST</span><span class="hudVal" id="bestAirEl">0.00s</span></div>
+        <div class="hudRow"><span class="hudLabel">TIME</span><span class="hudVal" id="clockEl">12:00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="driftPop">
+    <div id="driftScore">0</div>
+    <div id="driftMult">x1.0</div>
+  </div>
+
+  <div id="bigText"></div>
+
+  <div id="topButtons">
+    <button id="pauseBtn" title="Pause">⏸</button>
+    <button id="fsBtn" title="Fullscreen">⛶</button>
+    <button id="musicBtn" title="Music">♪</button>
+  </div>
+
+  <div id="touchLeft">
+    <div class="touchBtn" data-key="a">◀</div>
+    <div class="touchBtn" data-key="d">▶</div>
+  </div>
+  <div id="touchRight">
+    <div class="touchBtn" data-key="w">▲</div>
+    <div class="touchBtn" data-key="s">▼</div>
+    <div class="touchBtn" data-key=" ">⤓</div>
+    <div class="touchBtn" data-key="shift">N</div>
+  </div>
+</div>
+
+<canvas id="minimapCanvas" width="180" height="180"></canvas>
+
+<div id="loading" class="hidden">LOADING 0/0</div>
+
+<div id="pauseOverlay" class="hidden">
+  <h2>PAUSED</h2>
+  <button id="resumeBtn">RESUME</button>
+  <button id="quitBtn">QUIT</button>
+</div>
+
+<script type="module" src="./game.js"></script>
+
 </body>
 </html>
